@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String   @map("password_hash")
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  ordersAsCustomer  Order[]  @relation("CustomerOrders")
+  ordersCreatedBy   Order[]  @relation("CreatedByOrders")
+  trackingHistory   OrderTrackingHistory[]
+  agent             Agent?
+
+  @@map("users")
+}
+
+enum Role {
+  customer
+  agent
+  admin
+}
+
+model Zone {
+  id   String @id @default(uuid())
+  name String @unique
+
+  areas           Area[]
+  rateCardsFrom   RateCard[] @relation("FromZone")
+  rateCardsTo     RateCard[] @relation("ToZone")
+  ordersPickup    Order[]    @relation("PickupZone")
+  ordersDrop      Order[]    @relation("DropZone")
+  agents          Agent[]
+
+  @@map("zones")
+}
+
+model Area {
+  pincode String @id
+  zoneId  String @map("zone_id")
+  zone    Zone   @relation(fields: [zoneId], references: [id])
+
+  @@map("areas")
+}
+
+model RateCard {
+  id          String   @id @default(uuid())
+  fromZoneId  String   @map("from_zone_id")
+  toZoneId    String   @map("to_zone_id")
+  orderType   OrderType @map("order_type")
+  ratePerKg   Decimal  @map("rate_per_kg") @db.Decimal(10, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  fromZone Zone @relation("FromZone", fields: [fromZoneId], references: [id])
+  toZone   Zone @relation("ToZone", fields: [toZoneId], references: [id])
+  orders   Order[]
+
+  @@unique([fromZoneId, toZoneId, orderType])
+  @@map("rate_cards")
+}
+
+model CodSurchargeConfig {
+  id        String    @id @default(uuid())
+  orderType OrderType @unique @map("order_type")
+  type      SurchargeType
+  value     Decimal   @db.Decimal(10, 2)
+  isActive  Boolean   @default(true) @map("is_active")
+
+  @@map("cod_surcharge_config")
+}
+
+enum SurchargeType {
+  FLAT
+  PERCENTAGE
+}
+
+model Agent {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  zoneId           String?  @map("zone_id")
+  currentLat       Float?   @map("current_lat")
+  currentLng       Float?   @map("current_lng")
+  clockedIn        Boolean  @default(false) @map("clocked_in")
+  activeOrderCount Int      @default(0) @map("active_order_count")
+  maxCapacity      Int      @default(5) @map("max_capacity")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user   User  @relation(fields: [userId], references: [id])
+  zone   Zone? @relation(fields: [zoneId], references: [id])
+  orders Order[]
+
+  @@map("agents")
+}
+
+model Order {
+  id                  String      @id @default(uuid())
+  customerId          String      @map("customer_id")
+  createdById         String      @map("created_by")
+  pickupAddress       String      @map("pickup_address")
+  pickupPincode       String      @map("pickup_pincode")
+  pickupZoneId        String      @map("pickup_zone_id")
+  dropAddress         String      @map("drop_address")
+  dropPincode         String      @map("drop_pincode")
+  dropZoneId          String      @map("drop_zone_id")
+  lengthCm            Decimal     @map("length_cm") @db.Decimal(8, 2)
+  breadthCm           Decimal     @map("breadth_cm") @db.Decimal(8, 2)
+  heightCm            Decimal     @map("height_cm") @db.Decimal(8, 2)
+  actualWeightKg      Decimal     @map("actual_weight_kg") @db.Decimal(8, 2)
+  billableWeightKg    Decimal     @map("billable_weight_kg") @db.Decimal(8, 2)
+  orderType           OrderType   @map("order_type")
+  paymentType         PaymentType @map("payment_type")
+  rateCardId          String?     @map("rate_card_id")
+  appliedRateSnapshot Json        @map("applied_rate_snapshot")
+  codSurcharge        Decimal     @default(0) @map("cod_surcharge") @db.Decimal(10, 2)
+  charge              Decimal     @db.Decimal(10, 2)
+  currentStatus       OrderStatus @default(CREATED) @map("current_status")
+  assignedAgentId     String?     @map("assigned_agent_id")
+  rescheduleDate      DateTime?   @map("reschedule_date") @db.Date
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  customer        User    @relation("CustomerOrders", fields: [customerId], references: [id])
+  createdBy       User    @relation("CreatedByOrders", fields: [createdById], references: [id])
+  pickupZone      Zone    @relation("PickupZone", fields: [pickupZoneId], references: [id])
+  dropZone        Zone    @relation("DropZone", fields: [dropZoneId], references: [id])
+  rateCard        RateCard? @relation(fields: [rateCardId], references: [id])
+  assignedAgent   Agent?  @relation(fields: [assignedAgentId], references: [id])
+  trackingHistory OrderTrackingHistory[]
+  notificationOutbox NotificationOutbox[]
+
+  @@map("orders")
+}
+
+enum OrderType {
+  B2B
+  B2C
+}
+
+enum PaymentType {
+  PREPAID
+  COD
+}
+
+enum OrderStatus {
+  CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RESCHEDULED
+}
+
+model OrderTrackingHistory {
+  id         String      @id @default(uuid())
+  orderId    String      @map("order_id")
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  actorId    String      @map("actor_id")
+  actorRole  Role        @map("actor_role")
+  notes      String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+  actor User  @relation(fields: [actorId], references: [id])
+
+  @@map("order_tracking_history")
+}
+
+model NotificationOutbox {
+  id        String             @id @default(uuid())
+  orderId   String             @map("order_id")
+  channel   NotificationChannel
+  payload   Json
+  status    NotificationStatus @default(PENDING)
+  attempts  Int                @default(0)
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("notification_outbox")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
