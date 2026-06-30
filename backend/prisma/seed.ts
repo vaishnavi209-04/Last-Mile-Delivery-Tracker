@@ -26,6 +26,7 @@ async function main() {
   const zoneA = await prisma.zone.upsert({ where: { name: 'Zone A - North' }, update: {}, create: { name: 'Zone A - North' } });
   const zoneB = await prisma.zone.upsert({ where: { name: 'Zone B - South' }, update: {}, create: { name: 'Zone B - South' } });
   const zoneC = await prisma.zone.upsert({ where: { name: 'Zone C - East' },  update: {}, create: { name: 'Zone C - East' } });
+  const zoneD = await prisma.zone.upsert({ where: { name: 'Zone D - West' },  update: {}, create: { name: 'Zone D - West' } });
 
   // Areas (pincodes)
   const areas = [
@@ -35,6 +36,8 @@ async function main() {
     { pincode: '400002', zoneId: zoneB.id },
     { pincode: '700001', zoneId: zoneC.id },
     { pincode: '700002', zoneId: zoneC.id },
+    { pincode: '800001', zoneId: zoneD.id },
+    { pincode: '800002', zoneId: zoneD.id },
   ];
   for (const area of areas) {
     await prisma.area.upsert({ where: { pincode: area.pincode }, update: {}, create: area });
@@ -60,6 +63,8 @@ async function main() {
     { fromZoneId: zoneC.id, toZoneId: zoneB.id, orderType: 'B2B' as const, ratePerKg: 45 },
     { fromZoneId: zoneC.id, toZoneId: zoneC.id, orderType: 'B2C' as const, ratePerKg: 30 },
     { fromZoneId: zoneC.id, toZoneId: zoneC.id, orderType: 'B2B' as const, ratePerKg: 25 },
+    { fromZoneId: zoneD.id, toZoneId: zoneD.id, orderType: 'B2C' as const, ratePerKg: 30 },
+    { fromZoneId: zoneD.id, toZoneId: zoneD.id, orderType: 'B2B' as const, ratePerKg: 25 },
   ];
 
   for (const rc of rateConfigs) {
