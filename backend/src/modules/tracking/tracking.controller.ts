@@ -6,7 +6,7 @@ export const trackingController = {
   async getTimeline(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const history = await prisma.orderTrackingHistory.findMany({
-        where: { orderId: req.params.id },
+        where: { orderId: req.params.id as string },
         orderBy: { createdAt: 'asc' },
         include: {
           actor: { select: { name: true, role: true } },
