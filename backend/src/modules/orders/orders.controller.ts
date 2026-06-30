@@ -43,7 +43,7 @@ export const ordersController = {
 
   async getOrder(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const order = await ordersService.getOrderById(req.params.id, req.user!.userId, req.user!.role);
+      const order = await ordersService.getOrderById(req.params.id as string, req.user!.userId, req.user!.role);
       res.json({ order });
     } catch (err) { next(err); }
   },
@@ -52,7 +52,7 @@ export const ordersController = {
     try {
       const { toStatus, notes } = req.body;
       const result = await ordersService.updateStatus(
-        req.params.id,
+        req.params.id as string,
         toStatus,
         req.user!.userId,
         req.user!.role,
@@ -64,21 +64,21 @@ export const ordersController = {
 
   async reschedule(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await ordersService.reschedule(req.params.id, req.user!.userId, req.body.rescheduleDate);
+      const result = await ordersService.reschedule(req.params.id as string, req.user!.userId, req.body.rescheduleDate);
       res.json(result);
     } catch (err) { next(err); }
   },
 
   async autoAssign(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await ordersService.autoAssign(req.params.id);
+      const result = await ordersService.autoAssign(req.params.id as string);
       res.json(result);
     } catch (err) { next(err); }
   },
 
   async manualAssign(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await ordersService.manualAssign(req.params.id, req.body.agentId);
+      const result = await ordersService.manualAssign(req.params.id as string, req.body.agentId);
       res.json({ order: result });
     } catch (err) { next(err); }
   },

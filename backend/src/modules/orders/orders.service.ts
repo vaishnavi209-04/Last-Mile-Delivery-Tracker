@@ -71,7 +71,13 @@ export const ordersService = {
       if (agent) where.assignedAgentId = agent.id;
     }
 
-    if (filters.status) where.currentStatus = filters.status;
+    if (filters.status) {
+      if (typeof filters.status === 'string' && (filters.status as string).includes(',')) {
+        where.currentStatus = { in: (filters.status as string).split(',') as OrderStatus[] };
+      } else {
+        where.currentStatus = filters.status;
+      }
+    }
     if (filters.zoneId) where.pickupZoneId = filters.zoneId;
     if (filters.agentId) where.assignedAgentId = filters.agentId;
 
@@ -155,8 +161,7 @@ export const ordersService = {
     await notificationsService.enqueueForOrder(
       orderId,
       toStatus,
-      order.customer.email,
-      order.customer.phone
+      order.customer.email
     );
 
     return { success: true, newStatus: toStatus };
