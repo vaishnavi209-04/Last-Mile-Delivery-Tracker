@@ -19,7 +19,7 @@ export const rateCardsController = {
 
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const card = await rateCardsService.update(req.params.id, req.body.ratePerKg);
+      const card = await rateCardsService.update(req.params.id as string, req.body.ratePerKg);
       res.json({ rateCard: card });
     } catch (err) { next(err); }
   },

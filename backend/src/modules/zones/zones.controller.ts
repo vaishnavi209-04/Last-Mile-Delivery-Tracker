@@ -19,7 +19,7 @@ export const zonesController = {
 
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const zone = await zonesService.updateZone(req.params.id, req.body.name);
+      const zone = await zonesService.updateZone(req.params.id as string, req.body.name);
       res.json({ zone });
     } catch (err) { next(err); }
   },
@@ -33,7 +33,7 @@ export const zonesController = {
 
   async deleteArea(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      await zonesService.deleteArea(req.params.pincode);
+      await zonesService.deleteArea(req.params.pincode as string);
       res.json({ message: 'Area removed' });
     } catch (err) { next(err); }
   },
