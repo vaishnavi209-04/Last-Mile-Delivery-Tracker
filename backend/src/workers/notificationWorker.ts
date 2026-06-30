@@ -14,8 +14,6 @@ export function startNotificationWorker() {
 
       if (channel === 'EMAIL') {
         success = await notificationsService.sendEmail(payload.to, payload.subject!, payload.body);
-      } else if (channel === 'SMS') {
-        success = await notificationsService.sendSMS(payload.to, payload.body);
       }
 
       // Update outbox row
@@ -30,7 +28,7 @@ export function startNotificationWorker() {
       if (!success) throw new Error(`Notification delivery failed for outbox ${outboxId}`);
     },
     {
-      connection: redis,
+      connection: redis as any,
       concurrency: 5,
     }
   );
