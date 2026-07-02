@@ -105,6 +105,7 @@ model Agent {
 
 model Order {
   id                  String      @id @default(uuid())
+  trackingId          String      @unique @default(cuid()) @map("tracking_id")
   customerId          String      @map("customer_id")
   createdById         String      @map("created_by")
   pickupAddress       String      @map("pickup_address")
