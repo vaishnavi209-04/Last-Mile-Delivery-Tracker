@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { createError } from '../../middleware/errorHandler';
 
@@ -19,7 +20,7 @@ export const agentsService = {
   async updateLocation(agentId: string, lat: number, lng: number) {
     return prisma.agent.update({
       where: { id: agentId },
-      data: { currentLat: lat, currentLng: lng, updatedAt: new Date() },
+      data: { currentLat: lat, currentLng: lng },
     });
   },
 
@@ -78,7 +79,11 @@ export const agentsService = {
     });
   },
 
-  async manualAssign(orderId: string, agentId: string) {
+  /**
+   * Manually assign a specific agent to an order.
+   * Records an audit trail entry in order_tracking_history.
+   */
+  async manualAssign(orderId: string, agentId: string, actorId: string, actorRole: Role) {
     return prisma.$transaction(async (tx) => {
       const agent = await tx.agent.findUnique({ where: { id: agentId } });
       if (!agent) throw createError('Agent not found', 404);
@@ -88,7 +93,7 @@ export const agentsService = {
       const order = await tx.order.findUnique({ where: { id: orderId } });
       if (!order) throw createError('Order not found', 404);
 
-      // If order was previously assigned, decrement old agent count
+      // If order was previously assigned to a different agent, decrement old count
       if (order.assignedAgentId && order.assignedAgentId !== agentId) {
         await tx.agent.update({
           where: { id: order.assignedAgentId },
@@ -101,10 +106,24 @@ export const agentsService = {
         data: { activeOrderCount: { increment: 1 } },
       });
 
-      return tx.order.update({
+      const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: { assignedAgentId: agentId },
       });
+
+      // Record audit trail
+      await tx.orderTrackingHistory.create({
+        data: {
+          orderId,
+          fromStatus: order.currentStatus,
+          toStatus: order.currentStatus,
+          actorId,
+          actorRole,
+          notes: `Order manually assigned to agent`,
+        },
+      });
+
+      return updatedOrder;
     });
   },
 };

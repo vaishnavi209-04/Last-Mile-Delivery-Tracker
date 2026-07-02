@@ -2,8 +2,17 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../types';
 import { agentsService } from './agents.service';
 import { createError } from '../../middleware/errorHandler';
+import { prisma } from '../../lib/prisma';
 
 export const agentsController = {
+  async getMyProfile(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const agent = await agentsService.getAgentByUserId(req.user!.userId);
+      if (!agent) throw createError('Agent profile not found', 404);
+      res.json({ agent });
+    } catch (err) { next(err); }
+  },
+
   async getAll(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const agents = await agentsService.getAll();
@@ -41,7 +50,6 @@ export const agentsController = {
 
   async myOrders(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { prisma } = await import('../../lib/prisma');
       const agent = await agentsService.getAgentByUserId(req.user!.userId);
       if (!agent) throw createError('Agent profile not found', 404);
       const orders = await prisma.order.findMany({

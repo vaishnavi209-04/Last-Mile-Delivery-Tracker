@@ -6,6 +6,7 @@ import { roleGuard } from '../../middleware/roleGuard';
 const router = Router();
 router.use(authGuard);
 
+router.get('/me', roleGuard('agent'), agentsController.getMyProfile);
 router.get('/', roleGuard('admin'), agentsController.getAll);
 router.patch('/clock-in', roleGuard('agent'), agentsController.clockIn);
 router.patch('/clock-out', roleGuard('agent'), agentsController.clockOut);
