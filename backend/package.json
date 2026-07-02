@@ -12,6 +12,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:generate": "prisma generate"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
