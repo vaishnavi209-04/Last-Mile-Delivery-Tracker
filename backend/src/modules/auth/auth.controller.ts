@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service';
 import { AuthRequest } from '../../types';
+import { prisma } from '../../lib/prisma';
 
 export const authController = {
   async register(req: Request, res: Response, next: NextFunction) {
@@ -21,7 +22,6 @@ export const authController = {
   async me(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { userId } = req.user!;
-      const { prisma } = await import('../../lib/prisma');
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, name: true, email: true, role: true, phone: true },
