@@ -78,7 +78,12 @@ export const ordersController = {
 
   async manualAssign(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await ordersService.manualAssign(req.params.id as string, req.body.agentId);
+      const result = await ordersService.manualAssign(
+        req.params.id as string,
+        req.body.agentId,
+        req.user!.userId,
+        req.user!.role
+      );
       res.json({ order: result });
     } catch (err) { next(err); }
   },

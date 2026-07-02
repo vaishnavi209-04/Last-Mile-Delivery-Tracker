@@ -66,8 +66,7 @@ export const ordersService = {
 
     if (role === 'customer') where.customerId = userId;
     else if (role === 'agent') {
-      const { prisma: db } = await import('../../lib/prisma');
-      const agent = await db.agent.findUnique({ where: { userId } });
+      const agent = await prisma.agent.findUnique({ where: { userId } });
       if (agent) where.assignedAgentId = agent.id;
     }
 
@@ -157,12 +156,16 @@ export const ordersService = {
       }
     });
 
-    // Enqueue notification async (outside transaction)
-    await notificationsService.enqueueForOrder(
-      orderId,
-      toStatus,
-      order.customer.email
-    );
+    // Enqueue notification async (best-effort — never crash the status update)
+    try {
+      await notificationsService.enqueueForOrder(
+        orderId,
+        toStatus,
+        order.customer.email
+      );
+    } catch (notifErr) {
+      console.warn('[Notifications] Failed to enqueue — status update still succeeded:', notifErr);
+    }
 
     return { success: true, newStatus: toStatus };
   },
@@ -209,7 +212,7 @@ export const ordersService = {
     return { agentId };
   },
 
-  async manualAssign(orderId: string, agentId: string) {
-    return agentsService.manualAssign(orderId, agentId);
+  async manualAssign(orderId: string, agentId: string, actorId: string, actorRole: Role) {
+    return agentsService.manualAssign(orderId, agentId, actorId, actorRole);
   },
 };
